@@ -1,21 +1,4 @@
-#### Github.com/Evernorth OpenSource Project Template Instructions
-
-1. Clone the Github.com/Evernorth project repo that was created for your approved Open Source contribution by an Org admin.
-2. Copy all the *.MD from this repository to your new project. 
-3. Update the README, replacing the contents below as prescribed.
-4. Update CODEOWNERS replacing "\[ @Evernorth/team-name or each @username \]" with the expected value.
-5. Update the LICENSE and NOTICE replacing "\[ Year or Years Range of the Work \]" with the expected value.
-6. Update NOTICE replacing "\[ Project Repo Name \]" with the expected value.
-7. Delete these instructions and everything up to the _Project Title_ from the README.
-8. Write some great software and tell people about it.
-
-> Keep the README fresh! It's the first thing people see and will make the initial impression.
-
-> Want to see a good real world example? Take a look at the [README](https://github.com/spring-projects/spring-boot/blob/main/README.adoc) for spring-boot.
-
-----
-
-# Project Title
+# slogx-go
 
 **Description**:  Put a meaningful, short, plain-language description of what
 this project is trying to accomplish and why it matters.
