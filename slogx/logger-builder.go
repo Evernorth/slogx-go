@@ -13,6 +13,8 @@ const (
 	FormatJSON Format = 1
 )
 
+// LoggerBuilder is an interface for building slog.Logger objects.  The LoggerBuilder provides a fluent API for
+// configuring the slog.Logger.
 type LoggerBuilder interface {
 	WithContextHandler() LoggerBuilder
 	WithFormat(format Format) LoggerBuilder
@@ -22,6 +24,7 @@ type LoggerBuilder interface {
 	Build() (*slog.Logger, *slog.LevelVar)
 }
 
+// defaultLoggerBuilder is the default implementation of LoggerBuilder.
 type defaultLoggerBuilder struct {
 	writer            io.Writer
 	format            Format
@@ -30,8 +33,8 @@ type defaultLoggerBuilder struct {
 	levelEnvVar       string
 }
 
-// NewLoggerBuilder creates a new LoggerBuilder with default values.  The default values are:  LevelInfo, FormatText,
-// useContextHandler=false, levelEnvVar="" and writer=os.Stderr.
+// NewLoggerBuilder creates a new LoggerBuilder with default values.  The default values are:  level=LevelInfo,
+// format=FormatText, useContextHandler=false, levelEnvVar="" and writer=os.Stderr.
 func NewLoggerBuilder() LoggerBuilder {
 	return &defaultLoggerBuilder{
 		level:             slog.LevelInfo,
