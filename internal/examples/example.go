@@ -47,7 +47,7 @@ func manageLevelFromEnv(logLevel string, levelVar *slog.LevelVar) {
 }
 
 // setup Set the default level manager
-func setup(ctx context.Context) {
+func setup() {
 
 	// Enroll the levelVars with the LevelManager
 	manageLevelFromEnv(logger1LevelEnvVar, levelVar1)
@@ -57,8 +57,9 @@ func setup(ctx context.Context) {
 	slogx.GetLevelManager().UpdateLevels()
 
 	// Log that the logger has been initialized
-	slog.InfoContext(ctx, "Logger initialized", slog.String(logger1LevelEnvVar, levelVar1.Level().String()))
-	slog.InfoContext(ctx, "Logger initialized", slog.String(logger2LevelEnvVar, levelVar2.Level().String()))
+
+	slog.Info("Logger initialized", slog.String(logger1LevelEnvVar, levelVar1.Level().String()))
+	slog.Info("Logger initialized", slog.String(logger2LevelEnvVar, levelVar2.Level().String()))
 
 }
 
@@ -66,8 +67,12 @@ func setup(ctx context.Context) {
 // It also demonstrates how to manage the log level from an environment variable.
 // The logger is configured to log in JSON format to stdout with a default log level of INFO.
 func main() {
-	ctx := context.Background()
-	setup(ctx)
+
+	setup()
+
+	// Create a context with some attributes
+	ctx := slogx.ContextWithAttrs(context.Background(), slog.String("test1", "val1"),
+		slog.String("test2", "val2"))
 
 	// Log some test messages
 	logger1.Debug("logger1 debug message.")
@@ -80,6 +85,10 @@ func main() {
 	logger1.InfoContext(ctx, "logger1 info message.")
 	logger1.WarnContext(ctx, "logger1 warn message.")
 	logger1.ErrorContext(ctx, "logger1 error message.")
+
+	// Update the context
+	ctx = slogx.ContextWithAttrs(ctx, slog.String("test1", "val1x"),
+		slog.String("test3", "val3"))
 
 	// Log some test messages using the 2nd logger
 	logger2.Debug("logger2 debug message.")
