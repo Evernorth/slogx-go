@@ -32,3 +32,18 @@ func TestGetLevelFromEnv(t *testing.T) {
 	actualLevel = GetLevelFromEnv("INVALID_ENV_VAR", slog.LevelInfo)
 	assert.Equal(t, slog.LevelInfo, actualLevel)
 }
+
+func TestGetLevelFromEnv_InvalidValue(t *testing.T) {
+	invalidEnvVar := "INVALID_LEVEL"
+	require.NoError(t, os.Setenv(invalidEnvVar, "INVALID"))
+
+	actualLevel := GetLevelFromEnv(invalidEnvVar, slog.LevelInfo)
+	assert.Equal(t, slog.LevelInfo, actualLevel)
+}
+
+func TestGetLevelFromEnv_NoEnvVar(t *testing.T) {
+	nonExistentEnvVar := "NON_EXISTENT_ENV_VAR"
+
+	actualLevel := GetLevelFromEnv(nonExistentEnvVar, slog.LevelInfo)
+	assert.Equal(t, slog.LevelInfo, actualLevel)
+}
