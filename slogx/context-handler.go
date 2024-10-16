@@ -3,6 +3,7 @@ package slogx
 import (
 	"context"
 	"log/slog"
+	"sync"
 )
 
 type contextAttrsKey struct{}
@@ -13,21 +14,21 @@ type contextAttrsKey struct{}
 func ContextWithAttrs(ctx context.Context, newAttrs ...slog.Attr) context.Context {
 	attrMap := getAttrMap(ctx)
 	for _, newAttr := range newAttrs {
-		attrMap[newAttr.Key] = newAttr
+		attrMap.Store(newAttr.Key, newAttr)
 	}
 
 	return context.WithValue(ctx, contextAttrsKey{}, attrMap)
 }
 
 // getAttrMap returns the slog.Attrs from the provided Context.
-func getAttrMap(ctx context.Context) map[string]slog.Attr {
+func getAttrMap(ctx context.Context) *sync.Map {
 	// Create the map
-	attrMap := make(map[string]slog.Attr)
+	attrMap := new(sync.Map)
 
-	// Read the slice from the Context
+	// Read the map from the Context
 	value := ctx.Value(contextAttrsKey{})
 	if value != nil {
-		attrMap, ok := value.(map[string]slog.Attr)
+		attrMap, ok := value.(*sync.Map)
 		if !ok {
 			panic("Could not cast context attrs to []slog.Attr")
 		}
@@ -53,10 +54,17 @@ func (h *ContextHandler) Handle(ctx context.Context, r slog.Record) error {
 	attrMap := getAttrMap(ctx)
 
 	// Convert the map to a slice
-	attrs := make([]slog.Attr, 0, len(attrMap))
-	for _, value := range attrMap {
-		attrs = append(attrs, value)
-	}
+	attrs := make([]slog.Attr, 0)
+	attrMap.Range(func(key, value interface{}) bool {
+		// Cast the value
+		attr, ok := value.(slog.Attr)
+		if !ok {
+			panic("Could not cast value to slog.Attr")
+		}
+		attrs = append(attrs, attr)
+
+		return true
+	})
 
 	r.AddAttrs(attrs...)
 
