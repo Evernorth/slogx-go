@@ -1,15 +1,14 @@
 package main
 
 import (
-	"context"
 	"github.com/Evernorth/slogx-go/slogx"
 	"log/slog"
 	"os"
 )
 
 const (
-	AppLogLevel    = "APP_LOG_LEVEL"
-	SystemLogLevel = "SYSTEM_LOG_LEVEL"
+	logger1LevelEnvVar = "LOGGER1_LOG_LEVEL"
+	logger2LevelEnvVar = "LOGGER2_LOG_LEVEL"
 )
 
 var (
@@ -29,7 +28,7 @@ var (
 				Build()
 )
 
-func initializeLogLevel(logLevel string, levelVar *slog.LevelVar) {
+func manageLevelFromEnv(logLevel string, levelVar *slog.LevelVar) {
 	// Log the log level
 	slog.Default().Info("", slog.String(logLevel, os.Getenv(logLevel)))
 
@@ -44,14 +43,16 @@ func initializeLogLevel(logLevel string, levelVar *slog.LevelVar) {
 // Set the default level manager
 func setup() {
 
-	// Initialize the log levels
-	initializeLogLevel(AppLogLevel, levelVar1)
-	initializeLogLevel(SystemLogLevel, levelVar2)
+	// Enroll the levelVars with the LevelManager
+	manageLevelFromEnv(logger1LevelEnvVar, levelVar1)
+	manageLevelFromEnv(logger2LevelEnvVar, levelVar2)
+
+	// Tell the LevelManager to update the levels
 	slogx.GetLevelManager().UpdateLevels()
 
 	// Log that the logger has been initialized
-	slog.InfoContext(context.TODO(), "Logger initialized", slog.String(AppLogLevel, levelVar1.Level().String()))
-	slog.InfoContext(context.TODO(), "Logger initialized", slog.String(SystemLogLevel, levelVar2.Level().String()))
+	slog.Info("logger1 initialized", slog.String(logger1LevelEnvVar, levelVar1.Level().String()))
+	slog.Info("logger2 initialized", slog.String(logger2LevelEnvVar, levelVar2.Level().String()))
 
 }
 
@@ -59,16 +60,15 @@ func main() {
 
 	setup()
 
-	// Log some messages
+	// Log some test messages
+	logger1.Debug("logger1 debug message.")
+	logger1.Info("logger1 info message.")
+	logger1.Warn("logger1 warn message.")
+	logger1.Error("logger1 error message.")
 
-	logger1.DebugContext(context.TODO(), "Test debug AppLogLevel message.") // This will log out due to the AppLogLevel being set to Debug
-	logger1.ErrorContext(context.TODO(), "Test error AppLogLevel message.")
-	logger1.WarnContext(context.TODO(), "Test warn AppLogLevel message.")
-	logger1.InfoContext(context.TODO(), "Test info AppLogLevel message.")
-
-	logger2.DebugContext(context.TODO(), "Test debug SystemLogLevel message.") // This will not log out due to the SystemLogLevel being set to Info
-	logger2.ErrorContext(context.TODO(), "Test error SystemLogLevel message.")
-	logger2.WarnContext(context.TODO(), "Test warn SystemLogLevel message.")
-	logger2.InfoContext(context.TODO(), "Test info SystemLogLevel message.")
+	logger2.Debug("logger2 debug message.")
+	logger2.Info("logger2 info message.")
+	logger2.Warn("logger2 warn message.")
+	logger2.Error("logger2 error message.")
 
 }
