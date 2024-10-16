@@ -3,7 +3,6 @@ package slogx
 import (
 	"context"
 	"log/slog"
-	"sync"
 )
 
 type contextAttrsKey struct{}
@@ -12,30 +11,41 @@ type contextAttrsKey struct{}
 // Attrs is returned.  The behavior of this function is modeled after the context.WithValue
 // function.
 func ContextWithAttrs(ctx context.Context, newAttrs ...slog.Attr) context.Context {
+
+	// Get the Attrs map from the Context
 	attrMap := getAttrMap(ctx)
-	for _, newAttr := range newAttrs {
-		attrMap.Store(newAttr.Key, newAttr)
+
+	// Copy the map
+	newAttrMap := make(map[string]slog.Attr)
+	for key, value := range *attrMap {
+		newAttrMap[key] = value
 	}
 
-	return context.WithValue(ctx, contextAttrsKey{}, attrMap)
+	// Add the new Attrs to the copy
+	for _, newAttr := range newAttrs {
+		newAttrMap[newAttr.Key] = newAttr
+	}
+
+	// Store the copy in the new Context
+	return context.WithValue(ctx, contextAttrsKey{}, &newAttrMap)
 }
 
-// getAttrMap returns the slog.Attrs from the provided Context.
-func getAttrMap(ctx context.Context) *sync.Map {
-	// Create the map
-	attrMap := new(sync.Map)
+// getAttrMap returns the slog.Attrs map from the provided Context.
+func getAttrMap(ctx context.Context) *map[string]slog.Attr {
 
 	// Read the map from the Context
 	value := ctx.Value(contextAttrsKey{})
 	if value != nil {
-		attrMap, ok := value.(*sync.Map)
+		attrMap, ok := value.(*map[string]slog.Attr)
 		if !ok {
 			panic("Could not cast context attrs to []slog.Attr")
 		}
 		return attrMap
 	}
 
-	return attrMap
+	// Create the map
+	attrMap := make(map[string]slog.Attr)
+	return &attrMap
 }
 
 // ContextHandler is a slog.Handler that adds slog.Attr objects from the provided Context to the slog.Record.
@@ -51,20 +61,13 @@ func NewContextHandler(handler slog.Handler) *ContextHandler {
 }
 
 func (h *ContextHandler) Handle(ctx context.Context, r slog.Record) error {
-	attrMap := getAttrMap(ctx)
+	attrMap := *getAttrMap(ctx)
 
 	// Convert the map to a slice
-	attrs := make([]slog.Attr, 0)
-	attrMap.Range(func(key, value interface{}) bool {
-		// Cast the value
-		attr, ok := value.(slog.Attr)
-		if !ok {
-			panic("Could not cast value to slog.Attr")
-		}
-		attrs = append(attrs, attr)
-
-		return true
-	})
+	attrs := make([]slog.Attr, 0, len(attrMap))
+	for _, value := range attrMap {
+		attrs = append(attrs, value)
+	}
 
 	r.AddAttrs(attrs...)
 
