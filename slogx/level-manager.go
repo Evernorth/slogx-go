@@ -14,6 +14,7 @@ type LevelManager interface {
 	UpdateLevels()
 }
 
+
 // defaultLevelManager is the default implementation of LevelManager.
 type defaultLevelManager struct {
 	levelVarMap *sync.Map

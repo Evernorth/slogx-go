@@ -41,7 +41,9 @@ func GetLevelFromEnv(key string, defaultLevel slog.Level) slog.Level {
 	}
 	return *level
 }
-
+// getenv gets the environment variable with the provided key.  If the value is not empty, then it is returned.
+// If it is empty, and a default value is provided, then the default value will be returned.  If the value is empty
+// and no default value is provided, then a panic will occur.
 func getenv(key string, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
