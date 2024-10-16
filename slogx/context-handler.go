@@ -11,28 +11,30 @@ type contextAttrsKey struct{}
 // Attrs is returned.  The behavior of this function is modeled after the context.WithValue
 // function.
 func ContextWithAttrs(ctx context.Context, newAttrs ...slog.Attr) context.Context {
-	attrs := getAttrs(ctx)
-	attrs = append(attrs, newAttrs...)
+	attrMap := getAttrMap(ctx)
+	for _, newAttr := range newAttrs {
+		attrMap[newAttr.Key] = newAttr
+	}
 
-	return context.WithValue(ctx, contextAttrsKey{}, attrs)
+	return context.WithValue(ctx, contextAttrsKey{}, attrMap)
 }
 
-// getAttrs returns the contextlogger.Attrs from the provided Context.
-func getAttrs(ctx context.Context) []slog.Attr {
-	// Create the slice
-	var attrs []slog.Attr
+// getAttrMap returns the slog.Attrs from the provided Context.
+func getAttrMap(ctx context.Context) map[string]slog.Attr {
+	// Create the map
+	attrMap := make(map[string]slog.Attr)
 
-	// Read the slice from the Gin Context
+	// Read the slice from the Context
 	value := ctx.Value(contextAttrsKey{})
 	if value != nil {
-		attrs, ok := value.([]slog.Attr)
+		attrMap, ok := value.(map[string]slog.Attr)
 		if !ok {
 			panic("Could not cast context attrs to []slog.Attr")
 		}
-		return attrs
+		return attrMap
 	}
 
-	return attrs
+	return attrMap
 }
 
 // ContextHandler is a slog.Handler that adds slog.Attr objects from the provided Context to the slog.Record.
@@ -48,7 +50,14 @@ func NewContextHandler(handler slog.Handler) *ContextHandler {
 }
 
 func (h *ContextHandler) Handle(ctx context.Context, r slog.Record) error {
-	attrs := getAttrs(ctx)
+	attrMap := getAttrMap(ctx)
+
+	// Convert the map to a slice
+	attrs := make([]slog.Attr, 0, len(attrMap))
+	for _, value := range attrMap {
+		attrs = append(attrs, value)
+	}
+
 	r.AddAttrs(attrs...)
 
 	return h.Handler.Handle(ctx, r)
