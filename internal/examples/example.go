@@ -4,61 +4,71 @@ import (
 	"context"
 	"github.com/Evernorth/slogx-go/slogx"
 	"log/slog"
-	"net/http"
 	"os"
+)
+
+const (
+	AppLogLevel    = "APP_LOG_LEVEL"
+	SystemLogLevel = "SYSTEM_LOG_LEVEL"
 )
 
 var (
 	// This gets us a slog.Logger with context support that logs in JSON format to stdout.
-	logger, levelVar = slogx.NewLoggerBuilder().
-		WithWriter(os.Stdout).
-		WithFormat(slogx.FormatJSON).
-		WithLevel(slog.LevelInfo).
-		WithContextHandler().
-		Build()
+	logger1, levelVar1 = slogx.NewLoggerBuilder().
+				WithWriter(os.Stdout).
+				WithFormat(slogx.FormatJSON).
+				WithLevel(slog.LevelInfo).
+				WithContextHandler().
+				Build()
+
+	logger2, levelVar2 = slogx.NewLoggerBuilder().
+				WithWriter(os.Stdout).
+				WithFormat(slogx.FormatJSON).
+				WithLevel(slog.LevelInfo).
+				WithContextHandler().
+				Build()
 )
 
-func handler(response http.ResponseWriter, request *http.Request) {
+func initializeLogLevel(logLevel string, levelVar *slog.LevelVar) {
+	// Log the log level
+	slog.Default().Info("", slog.String(logLevel, os.Getenv(logLevel)))
 
-	// Get the ctx from the request
-	ctx := request.Context()
-
-	// Extract the id from the query parameters
-	id := request.URL.Query().Get("id")
-
-	// Log the request
-	logger.InfoContext(ctx, "Received request", slog.String("id", id))
-
-	// Write the response
-	response.WriteHeader(http.StatusOK)
-	_, err := response.Write([]byte("Id: " + id))
-	if err != nil {
-		return
-	}
-
-}
-func init() {
-	// Set the default level manager
-	// Enroll the levelVar to be managed from an environment variable.
-	err := slogx.GetLevelManager().ManageLevelFromEnv(levelVar, "APP_LOG_LEVEL")
+	// Set the log level
+	err := slogx.GetLevelManager().ManageLevelFromEnv(levelVar, logLevel)
 	if err != nil {
 		panic(err)
 	}
 
-	// Trigger the LevelManager to update the levels from the environment.
-	// This should be done again if the environment is updated, so that the logger level
-	// can be updated without restarting the application.
+}
+
+// Set the default level manager
+func setup() {
+
+	// Initialize the log levels
+	initializeLogLevel(AppLogLevel, levelVar1)
+	initializeLogLevel(SystemLogLevel, levelVar2)
 	slogx.GetLevelManager().UpdateLevels()
 
-	slog.InfoContext(context.Background(), "Logger initialized", slog.String("level", levelVar.Level().String()))
+	// Log that the logger has been initialized
+	slog.InfoContext(context.TODO(), "Logger initialized", slog.String(AppLogLevel, levelVar1.Level().String()))
+	slog.InfoContext(context.TODO(), "Logger initialized", slog.String(SystemLogLevel, levelVar2.Level().String()))
+
 }
 
 func main() {
 
-	http.HandleFunc("/", handler)
+	setup()
 
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		panic(err)
-	}
+	// Log some messages
+
+	logger1.DebugContext(context.TODO(), "Test debug AppLogLevel message.") // This will log out due to the AppLogLevel being set to Debug
+	logger1.ErrorContext(context.TODO(), "Test error AppLogLevel message.")
+	logger1.WarnContext(context.TODO(), "Test warn AppLogLevel message.")
+	logger1.InfoContext(context.TODO(), "Test info AppLogLevel message.")
+
+	logger2.DebugContext(context.TODO(), "Test debug SystemLogLevel message.") // This will not log out due to the SystemLogLevel being set to Info
+	logger2.ErrorContext(context.TODO(), "Test error SystemLogLevel message.")
+	logger2.WarnContext(context.TODO(), "Test warn SystemLogLevel message.")
+	logger2.InfoContext(context.TODO(), "Test info SystemLogLevel message.")
+
 }
