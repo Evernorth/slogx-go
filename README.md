@@ -133,6 +133,7 @@ func main() {
 	// This can be changed by setting the environment variable LOGGER2_LOG_LEVEL to INFO
 	logger2.Debug("logger2 debug message.")
 	logger2.Info("logger2 info message.")
+	logger2.Warn("logger2 warn message.")
 	logger2.Error("logger2 error message.")
 
 }
