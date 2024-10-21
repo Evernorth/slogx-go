@@ -7,7 +7,10 @@
 
 ## Description
 
-A collection of `slog` extensions.
+The `slogx` package is a collection of `slog` extensions. The [`slog`](https://pkg.go.dev/log/slog)  is a Go standard library package for a structured logger.
+
+## Features
+The `slogx` package provides the following features:
 * `ContextHandler` allows you to add `slog` attributes (`slog.Attr` instances) to a `context.Context`.  These attributes are added to log records when the `*Context` function variants (`InfoContext`, `ErrorContext`, etc) on the logger are used.
 * `LoggerBuilder` provides a simple way to build `slog.Logger` instances.
 * `LevelManager` provides a way to manage `slog.LevelVar` instances from environment variables.
