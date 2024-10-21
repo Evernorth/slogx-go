@@ -43,7 +43,11 @@ func main() {
 	logger.Info("Hello, World!")
 }
 ```
-
+#### Simple log example
+```json
+{"time":"2024-10-21T12:03:41.103566-04:00","level":"INFO","msg":"Hello, World!"}
+```
+.
 ### Managing log levels
 The following example demonstrates how to create a logger with a log level that can be changed at runtime.
 ```go
@@ -140,6 +144,19 @@ func main() {
 
 ```
 
+#### Log level example
+```json
+2024/10/21 12:05:40 INFO Logger initialized LOGGER1_LOG_LEVEL=INFO
+2024/10/21 12:05:40 INFO Logger initialized LOGGER2_LOG_LEVEL=DEBUG
+{"time":"2024-10-21T12:05:40.937543-04:00","level":"INFO","msg":"logger1 info message."}
+{"time":"2024-10-21T12:05:40.937545-04:00","level":"WARN","msg":"logger1 warn message."}
+{"time":"2024-10-21T12:05:40.937547-04:00","level":"ERROR","msg":"logger1 error message."}
+{"time":"2024-10-21T12:05:40.937548-04:00","level":"DEBUG","msg":"logger2 debug message."}
+{"time":"2024-10-21T12:05:40.93755-04:00","level":"INFO","msg":"logger2 info message."}
+{"time":"2024-10-21T12:05:40.937551-04:00","level":"ERROR","msg":"logger2 error message."}
+
+```
+
 ### Context-aware logging
 Create a context-aware `slog.Logger`, then use the logger making sure to use a _`Context`_ variant function.
 ```go
@@ -183,10 +200,14 @@ func main() {
 	logger.InfoContext(ctx, "Context and update attributes")
 
 }
-
-
 ```
-
+#### Context-aware log example
+```json
+{"time":"2024-10-21T12:09:44.301872-04:00","level":"INFO","msg":"Hello, World! Logging with Context."}
+{"time":"2024-10-21T12:09:44.302091-04:00","level":"INFO","msg":"Context and some attributes","test1":"val1","test2":"val2"}
+{"time":"2024-10-21T12:09:44.302095-04:00","level":"INFO","msg":"Context and some more attributes","test1":"val1","test2":"val2","test3":"val3"}
+{"time":"2024-10-21T12:09:44.302098-04:00","level":"INFO","msg":"Context and update attributes","test1":"new-val1","test2":"val2","test3":"val3"}
+```
 
 
 ## Dependencies
