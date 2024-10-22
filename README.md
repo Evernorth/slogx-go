@@ -1,9 +1,9 @@
 # slogx-go
   
-  [![Go Report Card](https://goreportcard.com/badge/github.com/Evernorth/slogx)](https://goreportcard.com/report/github.com/Evernorth/slogx)
-  [![GoDoc](https://godoc.org/github.com/Evernorth/slogx?status.svg)](https://godoc.org/github.com/Evernorth/slogx)
+  [![Go Report Card](https://goreportcard.com/badge/github.com/Evernorth/slogx-go)](https://goreportcard.com/report/github.com/Evernorth/slogx-go)
+  [![GoDoc](https://godoc.org/github.com/Evernorth/slogx-go?status.svg)](https://godoc.org/github.com/Evernorth/slogx-go)
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-  [![Release](https://img.shields.io/github/v/release/Evernorth/slogx)](https://github.com/Evernorth/slogx-go/releases)
+  [![Release](https://img.shields.io/github/v/release/Evernorth/slogx-go)](https://github.com/Evernorth/slogx-go/releases)
 
 ## Description
 
