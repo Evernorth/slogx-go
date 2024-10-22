@@ -1,7 +1,7 @@
 package slogx
 
 import (
-	"github.com/rotisserie/eris"
+	"errors"
 	"log/slog"
 	"sync"
 )
@@ -33,10 +33,10 @@ func GetLevelManager() LevelManager {
 // updated when UpdateLevels is called.
 func (lm *defaultLevelManager) ManageLevelFromEnv(levelVar *slog.LevelVar, key string) error {
 	if levelVar == nil {
-		return eris.New("levelVar is required")
+		return errors.New("levelVar is required")
 	}
 	if key == "" {
-		return eris.New("envVar is required")
+		return errors.New("envVar is required")
 	}
 	lm.levelVarMap.Store(levelVar, key)
 	return nil

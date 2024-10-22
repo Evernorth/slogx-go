@@ -1,7 +1,7 @@
 package slogx
 
 import (
-	"github.com/rotisserie/eris"
+	"errors"
 	"log/slog"
 	"os"
 	"strings"
@@ -23,7 +23,7 @@ func GetLevelByName(levelName string) (*slog.Level, error) {
 		levelError := slog.LevelError
 		return &levelError, nil
 	} else {
-		return nil, eris.New("invalid level name: " + levelName)
+		return nil, errors.New("invalid level name: " + levelName)
 	}
 }
 
