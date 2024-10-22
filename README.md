@@ -47,7 +47,7 @@ func main() {
 }
 ```
 #### Simple log example
-```json
+```text
 {"time":"2024-10-21T12:03:41.103566-04:00","level":"INFO","msg":"Hello, World!"}
 ```
 .
@@ -151,8 +151,6 @@ func main() {
 ```text
 2024/10/21 12:05:40 INFO Logger initialized LOGGER1_LOG_LEVEL=INFO
 2024/10/21 12:05:40 INFO Logger initialized LOGGER2_LOG_LEVEL=DEBUG
-```
-```json
 {"time":"2024-10-21T12:05:40.937543-04:00","level":"INFO","msg":"logger1 info message."}
 {"time":"2024-10-21T12:05:40.937545-04:00","level":"WARN","msg":"logger1 warn message."}
 {"time":"2024-10-21T12:05:40.937547-04:00","level":"ERROR","msg":"logger1 error message."}
@@ -207,7 +205,7 @@ func main() {
 }
 ```
 #### Context-aware log example
-```json
+```text
 {"time":"2024-10-21T12:09:44.301872-04:00","level":"INFO","msg":"Hello, World! Logging with Context."}
 {"time":"2024-10-21T12:09:44.302091-04:00","level":"INFO","msg":"Context and some attributes","test1":"val1","test2":"val2"}
 {"time":"2024-10-21T12:09:44.302095-04:00","level":"INFO","msg":"Context and some more attributes","test1":"val1","test2":"val2","test3":"val3"}
