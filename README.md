@@ -148,7 +148,7 @@ func main() {
 ```
 
 #### Log level example
-```json
+```text
 2024/10/21 12:05:40 INFO Logger initialized LOGGER1_LOG_LEVEL=INFO
 2024/10/21 12:05:40 INFO Logger initialized LOGGER2_LOG_LEVEL=DEBUG
 {"time":"2024-10-21T12:05:40.937543-04:00","level":"INFO","msg":"logger1 info message."}
