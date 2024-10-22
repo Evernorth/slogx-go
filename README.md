@@ -151,6 +151,8 @@ func main() {
 ```text
 2024/10/21 12:05:40 INFO Logger initialized LOGGER1_LOG_LEVEL=INFO
 2024/10/21 12:05:40 INFO Logger initialized LOGGER2_LOG_LEVEL=DEBUG
+```
+```json
 {"time":"2024-10-21T12:05:40.937543-04:00","level":"INFO","msg":"logger1 info message."}
 {"time":"2024-10-21T12:05:40.937545-04:00","level":"WARN","msg":"logger1 warn message."}
 {"time":"2024-10-21T12:05:40.937547-04:00","level":"ERROR","msg":"logger1 error message."}
