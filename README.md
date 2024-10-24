@@ -7,7 +7,7 @@
 
 ## Description
 
-The `slogx` package is a collection of `slog` extensions. The [`slog`](https://pkg.go.dev/log/slog)  is a Go standard library package for a structured logger.
+Package `slogx` is a collection of extensions to Go’s structured logging package, [`slog`](https://pkg.go.dev/log/slog).
 
 ## Features
 The `slogx` package provides the following features:
