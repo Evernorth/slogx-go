@@ -29,30 +29,36 @@ func GetLevelByName(levelName string) (*slog.Level, error) {
 
 // GetLevelFromEnv returns a slog.Level object for the provided environment variable key.
 // If the environment variable is not set or the level name is not valid, the defaultLevel is returned.
+// ToDo: Why is this public and how to deprecate?
 func GetLevelFromEnv(key string, defaultLevel slog.Level) slog.Level {
+	return GetLevelFromNameFunc(key, getEnvLevelNameFunc(), defaultLevel)
+}
+
+// GetLevelFromNameFunc returns a slog.Level object for the provided LevelNameFunc.
+// If a key is not set or the level name is not valid, the defaultLevel is returned.
+func GetLevelFromNameFunc(levelKey string, levelNameFunc LevelNameFunc, defaultLevel slog.Level) slog.Level {
 	defaultLevelStr := defaultLevel.String()
-	levelStr := getenv(key, &defaultLevelStr)
-	level, err := GetLevelByName(levelStr)
+	levelName := levelNameFunc(levelKey)
+	if levelName == "" {
+		if defaultLevelStr != "" {
+			return defaultLevel
+		} else {
+			panic("required Level name variable " + levelKey + " not found")
+		}
+	}
+	level, err := GetLevelByName(levelName)
 	if err != nil {
-		slog.Default().Warn("Environment variable has invalid logging level name.",
-			slog.String("key", key),
-			slog.String("level", levelStr))
+		slog.Default().Warn("Key is an invalid logging level name.",
+			slog.String("key", levelKey),
+			slog.String("level", levelName))
 		return defaultLevel
 	}
 	return *level
 }
 
-// getenv gets the environment variable with the provided key.  If the value is not empty, then it is returned.
-// If it is empty, and a default value is provided, then the default value will be returned.  If the value is empty
-// and no default value is provided, then a panic will occur.
-func getenv(key string, defaultValue *string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		if defaultValue != nil {
-			return *defaultValue
-		} else {
-			panic("required env variable " + key + " not found")
-		}
+// getEnvLevelNameFunc gets the environment variable with the provided level name key.
+func getEnvLevelNameFunc() LevelNameFunc {
+	return func(key string) string {
+		return os.Getenv(key)
 	}
-	return value
 }

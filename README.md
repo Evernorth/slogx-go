@@ -13,7 +13,7 @@ Package `slogx` is a collection of extensions to Go’s structured logging packa
 The `slogx` package provides the following features:
 * `ContextHandler` allows you to add `slog` attributes (`slog.Attr` instances) to a `context.Context`.  These attributes are added to log records when the `*Context` function variants (`InfoContext`, `ErrorContext`, etc) on the logger are used.
 * `LoggerBuilder` provides a simple way to build `slog.Logger` instances.
-* `LevelManager` provides a way to manage `slog.LevelVar` instances from environment variables.
+* `LevelManager` provides a way to manage `slog.LevelVar` instances from environment variables or provided LevelNameFunc (useful with config modules like koanf, viper, etc.).
 * Multiple loggers can be created with different log levels and formats. See [internal/examples](internal/examples) for more examples.
 
 ## Installation
@@ -86,12 +86,13 @@ var (
 				Build()
 )
 
-// manageLevelFromEnv Manage the log level from an environment variable
+// manageLevelFromEnv Manage the log level from an environment variable with LevelManager.ManageLevelFromEnv.
+// Alternatively ManageLevelFromFunc can be used to manage the log level from a custom function.
 func manageLevelFromEnv(logLevel string, levelVar *slog.LevelVar) {
 	// Log the log level
 	slog.Default().Info("", slog.String(logLevel, os.Getenv(logLevel)))
 
-	// Set the log level
+	// Set the log level. See: ManageLevelFromFunc alternative
 	err := slogx.GetLevelManager().ManageLevelFromEnv(levelVar, logLevel)
 	if err != nil {
 		panic(err)
