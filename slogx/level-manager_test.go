@@ -134,8 +134,6 @@ func TestLevelManager_ManageLevel_EmptyLevelVarKey(t *testing.T) {
 
 func TestLevelManager_ManageLevel_NilDefaultLevelVar(t *testing.T) {
 	levelManager := GetLevelManager()
-	levelVar := slog.LevelVar{}
-	levelVar.Set(slog.LevelInfo)
 	levelVar1Key := "LEVEL_VAR_1_PARTIAL"
 
 	err := levelManager.ManageLevelFromEnv(nil, levelVar1Key)
@@ -143,4 +141,14 @@ func TestLevelManager_ManageLevel_NilDefaultLevelVar(t *testing.T) {
 
 	err = levelManager.ManageLevelFromFunc(nil, levelVar1Key, getEnvLevelNameFunc())
 	assert.EqualError(t, err, "defaultLevelVar is required")
+}
+
+func TestLevelManager_ManageLevel_NilLevelNameFunc(t *testing.T) {
+	levelManager := GetLevelManager()
+	levelVar := slog.LevelVar{}
+	levelVar.Set(slog.LevelInfo)
+	levelVar1Key := "LEVEL_VAR_1_PARTIAL"
+
+	err := levelManager.ManageLevelFromFunc(&levelVar, levelVar1Key, nil)
+	assert.EqualError(t, err, "levelNameFunc is required")
 }
