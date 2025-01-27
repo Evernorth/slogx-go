@@ -29,7 +29,7 @@ func GetLevelByName(levelName string) (*slog.Level, error) {
 
 // GetLevelFromEnv returns a slog.Level object for the provided environment variable key.
 // If the environment variable is not set or the level name is not valid, the defaultLevel is returned.
-// ToDo: Why is this public and how to deprecate?
+// ToDo: Why is this public?  Let's deprecate?
 func GetLevelFromEnv(key string, defaultLevel slog.Level) slog.Level {
 	return GetLevelFromNameFunc(key, getEnvLevelNameFunc(), defaultLevel)
 }
