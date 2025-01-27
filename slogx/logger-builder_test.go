@@ -16,7 +16,9 @@ func TestNewLoggerBuilder(t *testing.T) {
 	assert.Equal(t, FormatText, builder.format)
 	assert.False(t, builder.useContextHandler)
 	assert.Equal(t, "", builder.levelKey)
-	assert.Equal(t, nil, builder.levelNameFunc)
+	nameFuncPtr := reflect.ValueOf(builder.levelNameFunc).Pointer()
+	namePtrName1 := runtime.FuncForPC(nameFuncPtr).Name()
+	assert.Equal(t, "", namePtrName1)
 	assert.Equal(t, os.Stderr, builder.writer)
 }
 
@@ -49,13 +51,14 @@ func TestWithLevelEnvVar(t *testing.T) {
 
 func TestWithLevelNameFunc(t *testing.T) {
 	envVar := "LOG_LEVEL"
-	builder := NewLoggerBuilder().WithLevelNameFunc(envVar, getEnvLevelNameFunc()).(*defaultLoggerBuilder)
+	levelNameFunc := getEnvLevelNameFunc()
+	builder := NewLoggerBuilder().WithLevelNameFunc(envVar, levelNameFunc).(*defaultLoggerBuilder)
 	assert.Equal(t, envVar, builder.levelKey)
 
 	nameFuncPtr := reflect.ValueOf(builder.levelNameFunc).Pointer()
 	namePtrName1 := runtime.FuncForPC(nameFuncPtr).Name()
 
-	nameFuncPtr = reflect.ValueOf(getEnvLevelNameFunc()).Pointer()
+	nameFuncPtr = reflect.ValueOf(levelNameFunc).Pointer()
 	namePtrName2 := runtime.FuncForPC(nameFuncPtr).Name()
 
 	assert.Equal(t, namePtrName2, namePtrName1)
