@@ -13,7 +13,7 @@ Package `slogx` is a collection of extensions to Go’s structured logging packa
 The `slogx` package provides the following features:
 * `ContextHandler` allows you to add `slog` attributes (`slog.Attr` instances) to a `context.Context`.  These attributes are added to log records when the `*Context` function variants (`InfoContext`, `ErrorContext`, etc) on the logger are used.
 * `LoggerBuilder` provides a simple way to build `slog.Logger` instances.
-* `LevelManager` provides a way to manage `slog.LevelVar` instances from environment variables or provided LevelNameFunc (useful with config modules like koanf, viper, etc.).
+* `LevelManager` provides a way to manage `slog.LevelVar` instances from environment variables or provided LevelFunc (useful with config modules like koanf, viper, etc.).
 * Multiple loggers can be created with different log levels and formats. See [internal/examples](internal/examples) for more examples.
 
 ## Installation
