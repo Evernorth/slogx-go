@@ -3,7 +3,6 @@ package slogx
 import (
 	"errors"
 	"log/slog"
-	"os"
 	"strings"
 )
 
@@ -29,16 +28,15 @@ func GetLevelByName(levelName string) (*slog.Level, error) {
 
 // GetLevelFromEnv returns a slog.Level object for the provided environment variable key.
 // If the environment variable is not set or the level name is not valid, the defaultLevel is returned.
-// ToDo: Why is this public?  Let's deprecate?
 func GetLevelFromEnv(key string, defaultLevel slog.Level) slog.Level {
-	return GetLevelFromNameFunc(key, getEnvLevelNameFunc(), defaultLevel)
+	return GetLevelFromFunc(key, getEnvLevelFunc(), defaultLevel)
 }
 
-// GetLevelFromNameFunc returns a slog.Level object for the provided LevelNameFunc.
+// GetLevelFromFunc returns a slog.Level object for the provided LevelFunc.
 // If a key is not set or the level name is not valid, the defaultLevel is returned.
-func GetLevelFromNameFunc(levelKey string, levelNameFunc LevelNameFunc, defaultLevel slog.Level) slog.Level {
+func GetLevelFromFunc(levelKey string, levelFunc LevelFunc, defaultLevel slog.Level) slog.Level {
 	defaultLevelStr := defaultLevel.String()
-	levelName := levelNameFunc(levelKey)
+	levelName := levelFunc(levelKey)
 	if levelName == "" {
 		if defaultLevelStr != "" {
 			return defaultLevel
@@ -54,11 +52,4 @@ func GetLevelFromNameFunc(levelKey string, levelNameFunc LevelNameFunc, defaultL
 		return defaultLevel
 	}
 	return *level
-}
-
-// getEnvLevelNameFunc gets the environment variable with the provided level name key.
-func getEnvLevelNameFunc() LevelNameFunc {
-	return func(key string) string {
-		return os.Getenv(key)
-	}
 }

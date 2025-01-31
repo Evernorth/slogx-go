@@ -3,18 +3,19 @@ package slogx
 import (
 	"errors"
 	"log/slog"
+	"os"
 	"sync"
 )
 
-// LevelNameFunc is a function that returns the name of a level given a key.
-type LevelNameFunc func(key string) string
+// LevelFunc is a function that returns the name of a level given a key.
+type LevelFunc func(key string) string
 
 // LevelManager is an interface for managing slog.LevelVar objects from environment variables.  Call ManageLevelFromEnv to
 // associate a slog.LevelVar with an environment variable key.  Call UpdateLevels to update the levels of all enrolled
 // slog.LevelVar objects from their environment variables.
 type LevelManager interface {
 	ManageLevelFromEnv(levelVar *slog.LevelVar, key string) error
-	ManageLevelFromFunc(levelVar *slog.LevelVar, key string, levelNameFunc LevelNameFunc) error
+	ManageLevelFromFunc(levelVar *slog.LevelVar, key string, levelFunc LevelFunc) error
 	UpdateLevels()
 }
 
@@ -34,32 +35,35 @@ func GetLevelManager() LevelManager {
 }
 
 type levelFuncHolder struct {
-	levelKey      string
-	levelNameFunc LevelNameFunc
+	levelKey  string
+	levelFunc LevelFunc
 }
 
 // ManageLevelFromEnv associates a slog.LevelVar with an environment variable key.  The level of the slog.LevelVar will be
 // updated when UpdateLevels is called.
 func (lm *defaultLevelManager) ManageLevelFromEnv(defaultLevelVar *slog.LevelVar, key string) error {
-	err := lm.ManageLevelFromFunc(defaultLevelVar, key, getEnvLevelNameFunc())
+	err := lm.ManageLevelFromFunc(defaultLevelVar, key, getEnvLevelFunc())
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (lm *defaultLevelManager) ManageLevelFromFunc(defaultLevelVar *slog.LevelVar, key string, levelNameFunc LevelNameFunc) error {
+// ManageLevelFromFunc associates a slog.LevelVar with a key and a LevelFunc.  The level of the slog.LevelVar will be
+// updated when UpdateLevels is called.
+// A LevelFunc is useful for getting a level name using alternate sources, such as koanf, viper, etc.
+func (lm *defaultLevelManager) ManageLevelFromFunc(defaultLevelVar *slog.LevelVar, key string, levelFunc LevelFunc) error {
 	if defaultLevelVar == nil {
 		return errors.New("defaultLevelVar is required")
 	}
 	if key == "" {
 		return errors.New("key is required")
 	}
-	if levelNameFunc == nil {
-		return errors.New("levelNameFunc is required")
+	if levelFunc == nil {
+		return errors.New("levelFunc is required")
 	}
 
-	lm.levelVarMap.Store(defaultLevelVar, levelFuncHolder{levelKey: key, levelNameFunc: levelNameFunc})
+	lm.levelVarMap.Store(defaultLevelVar, levelFuncHolder{levelKey: key, levelFunc: levelFunc})
 	return nil
 }
 
@@ -80,12 +84,19 @@ func (lm *defaultLevelManager) UpdateLevels() {
 			panic("Could not cast value to levelFuncHolder")
 		}
 
-		// Determine the level, defaulting to the current level if the levelNameFunc does not return a level name
-		level := GetLevelFromNameFunc(funcHolder.levelKey, funcHolder.levelNameFunc, defaultLevelVar.Level())
+		// Determine the level, defaulting to the current level if the levelFunc does not return a level name
+		level := GetLevelFromFunc(funcHolder.levelKey, funcHolder.levelFunc, defaultLevelVar.Level())
 
 		// Update the level
 		defaultLevelVar.Set(level)
 
 		return true
 	})
+}
+
+// getEnvLevelFunc gets the environment variable with the provided level name key.
+func getEnvLevelFunc() LevelFunc {
+	return func(key string) string {
+		return os.Getenv(key)
+	}
 }

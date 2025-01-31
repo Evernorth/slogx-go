@@ -23,7 +23,7 @@ func TestLevelManager(t *testing.T) {
 	var err error
 	err = levelManager.ManageLevelFromEnv(&levelVar1, levelVar1Key)
 	assert.NoError(t, err)
-	err = levelManager.ManageLevelFromFunc(&levelVar2, levelVar2Key, getEnvLevelNameFunc())
+	err = levelManager.ManageLevelFromFunc(&levelVar2, levelVar2Key, getEnvLevelFunc())
 	assert.NoError(t, err)
 
 	levelManager.UpdateLevels()
@@ -55,7 +55,7 @@ func TestLevelManagerErrors(t *testing.T) {
 	err = levelManager.ManageLevelFromEnv(nil, "LEVEL_VAR_1_LEVEL")
 	assert.Error(t, err)
 	err = nil
-	err = levelManager.ManageLevelFromFunc(&slog.LevelVar{}, "", getEnvLevelNameFunc())
+	err = levelManager.ManageLevelFromFunc(&slog.LevelVar{}, "", getEnvLevelFunc())
 	assert.Error(t, err)
 }
 
@@ -72,7 +72,7 @@ func TestUpdateLevels_NoEnvVarsSet(t *testing.T) {
 
 	err := levelManager.ManageLevelFromEnv(&levelVar1, levelVar1Key)
 	assert.NoError(t, err)
-	err = levelManager.ManageLevelFromFunc(&levelVar2, levelVar2Key, getEnvLevelNameFunc())
+	err = levelManager.ManageLevelFromFunc(&levelVar2, levelVar2Key, getEnvLevelFunc())
 	assert.NoError(t, err)
 
 	levelManager.UpdateLevels()
@@ -93,7 +93,7 @@ func TestUpdateLevels_InvalidEnvVarValues(t *testing.T) {
 
 	err := levelManager.ManageLevelFromEnv(&levelVar1, levelVar1Key)
 	assert.NoError(t, err)
-	err = levelManager.ManageLevelFromFunc(&levelVar2, levelVar2Key, getEnvLevelNameFunc())
+	err = levelManager.ManageLevelFromFunc(&levelVar2, levelVar2Key, getEnvLevelFunc())
 	assert.NoError(t, err)
 
 	require.NoError(t, os.Setenv(levelVar1Key, "INVALID_LEVEL"))
@@ -128,7 +128,7 @@ func TestLevelManager_ManageLevel_EmptyLevelVarKey(t *testing.T) {
 	err := levelManager.ManageLevelFromEnv(&levelVar, "")
 	assert.EqualError(t, err, "key is required")
 
-	err = levelManager.ManageLevelFromFunc(&levelVar, "", getEnvLevelNameFunc())
+	err = levelManager.ManageLevelFromFunc(&levelVar, "", getEnvLevelFunc())
 	assert.EqualError(t, err, "key is required")
 }
 
@@ -139,16 +139,16 @@ func TestLevelManager_ManageLevel_NilDefaultLevelVar(t *testing.T) {
 	err := levelManager.ManageLevelFromEnv(nil, levelVar1Key)
 	assert.EqualError(t, err, "defaultLevelVar is required")
 
-	err = levelManager.ManageLevelFromFunc(nil, levelVar1Key, getEnvLevelNameFunc())
+	err = levelManager.ManageLevelFromFunc(nil, levelVar1Key, getEnvLevelFunc())
 	assert.EqualError(t, err, "defaultLevelVar is required")
 }
 
-func TestLevelManager_ManageLevel_NilLevelNameFunc(t *testing.T) {
+func TestLevelManager_ManageLevel_NilLevelFunc(t *testing.T) {
 	levelManager := GetLevelManager()
 	levelVar := slog.LevelVar{}
 	levelVar.Set(slog.LevelInfo)
 	levelVar1Key := "LEVEL_VAR_1_PARTIAL"
 
 	err := levelManager.ManageLevelFromFunc(&levelVar, levelVar1Key, nil)
-	assert.EqualError(t, err, "levelNameFunc is required")
+	assert.EqualError(t, err, "levelFunc is required")
 }

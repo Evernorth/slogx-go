@@ -52,7 +52,8 @@ func main() {
 ```
 .
 ### Managing log levels
-The following example demonstrates how to create a logger with a log level that can be changed at runtime.
+The following examples demonstrate how to create a logger with a log level that can be changed at runtime.
+#### Environment Variables example
 ```go
 package main
 
@@ -87,12 +88,11 @@ var (
 )
 
 // manageLevelFromEnv Manage the log level from an environment variable with LevelManager.ManageLevelFromEnv.
-// Alternatively ManageLevelFromFunc can be used to manage the log level from a custom function.
 func manageLevelFromEnv(logLevel string, levelVar *slog.LevelVar) {
 	// Log the log level
 	slog.Default().Info("", slog.String(logLevel, os.Getenv(logLevel)))
 
-	// Set the log level. See: ManageLevelFromFunc alternative
+	// Set the log level.
 	err := slogx.GetLevelManager().ManageLevelFromEnv(levelVar, logLevel)
 	if err != nil {
 		panic(err)
@@ -147,8 +147,57 @@ func main() {
 }
 
 ```
+#### LevelFunc example
+Following the example above, this is abbreviated to only show the differences for using a LevelFunc.
+```go
+package main
 
-#### Log level example
+import (
+	"github.com/Evernorth/slogx-go/slogx"
+	"github.com/knadh/koanf/v2"
+	"log/slog"
+	"os"
+) 
+
+// const from above ...
+
+var (
+  // setup loggers from above ...
+  
+  k = koanf.New(".")
+)
+
+// manageLevelFromFunc Manage the log level from a function with LevelManager.ManageLevelFromFunc.
+func manageLevelFromFunc(logLevel string, levelVar *slog.LevelVar) {
+	// Log the log level
+	slog.Default().Info("", slog.String(logLevel, k.String(logLevel)))
+
+	// Set the log level.
+	err := slogx.GetLevelManager().ManageLevelFromFunc(levelVar, logLevel, k.String)
+	if err != nil {
+		panic(err)
+	}
+
+}
+
+// setup Set the default level manager
+func setup() {
+
+    // Load Koanf config from Provider of choice.
+    loadConfig(k)
+
+	// Enroll the levelVars with the LevelManager
+	manageLevelFromFunc(logger1LevelEnvVar, levelVar1)
+	manageLevelFromFunc(logger2LevelEnvVar, levelVar2)
+	
+	// code from above ...
+}
+
+// main from above ...
+
+```
+
+#### Log example
 ```text
 2024/10/21 12:05:40 INFO Logger initialized LOGGER1_LOG_LEVEL=INFO
 2024/10/21 12:05:40 INFO Logger initialized LOGGER2_LOG_LEVEL=DEBUG
