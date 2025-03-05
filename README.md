@@ -148,7 +148,7 @@ func main() {
 
 ```
 #### LevelFunc example
-Following the example above, this is abbreviated to only show the differences for using a LevelFunc.
+Although very similar to the above, this example demonstrates how a LevelFunc can be used to customize the source of log level values.
 ```go
 package main
 
