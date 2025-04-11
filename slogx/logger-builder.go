@@ -19,6 +19,7 @@ type LoggerBuilder interface {
 	WithWriter(writer io.Writer) LoggerBuilder
 	WithLevel(level slog.Level) LoggerBuilder
 	WithLevelEnvVar(key string) LoggerBuilder
+	WithLevelFunc(key string, levelFunc LevelFunc) LoggerBuilder
 	Build() (*slog.Logger, *slog.LevelVar)
 }
 
@@ -27,17 +28,19 @@ type defaultLoggerBuilder struct {
 	format            Format
 	level             slog.Level
 	useContextHandler bool
-	levelEnvVar       string
+	levelKey          string
+	levelFunc         LevelFunc
 }
 
 // NewLoggerBuilder creates a new LoggerBuilder with default values.  The default values are:  LevelInfo, FormatText,
-// useContextHandler=false, levelEnvVar="" and writer=os.Stderr.
+// useContextHandler=false, levelKey="", levelFunc=nil and writer=os.Stderr.
 func NewLoggerBuilder() LoggerBuilder {
 	return &defaultLoggerBuilder{
 		level:             slog.LevelInfo,
 		format:            FormatText,
 		useContextHandler: false,
-		levelEnvVar:       "",
+		levelKey:          "",
+		levelFunc:         nil,
 		writer:            os.Stderr,
 	}
 }
@@ -66,9 +69,16 @@ func (lb *defaultLoggerBuilder) WithLevel(level slog.Level) LoggerBuilder {
 	return lb
 }
 
-// WithLevelEnvVar sets the environment variable key to use for the logger level.
+// WithLevelEnvVar sets the environment variable key to use to get the level.
 func (lb *defaultLoggerBuilder) WithLevelEnvVar(key string) LoggerBuilder {
-	lb.levelEnvVar = key
+	lb.levelKey = key
+	return lb
+}
+
+// WithLevelFunc sets the level variable key and function to use to get the level name.
+func (lb *defaultLoggerBuilder) WithLevelFunc(key string, levelFunc LevelFunc) LoggerBuilder {
+	lb.levelKey = key
+	lb.levelFunc = levelFunc
 	return lb
 }
 
@@ -80,9 +90,14 @@ func (lb *defaultLoggerBuilder) Build() (*slog.Logger, *slog.LevelVar) {
 	levelVar := new(slog.LevelVar)
 	levelVar.Set(lb.level)
 
-	// If a level environment variable is provided, try to set the level from the environment
-	if lb.levelEnvVar != "" {
-		levelVar.Set(GetLevelFromEnv(lb.levelEnvVar, lb.level))
+	// If a level variable key is provided and a level function is provided, set the level from the level function
+	// Otherwise, try to set the level from the environment
+	if lb.levelKey != "" {
+		if lb.levelFunc != nil {
+			levelVar.Set(GetLevelFromFunc(lb.levelKey, lb.levelFunc, lb.level))
+		} else {
+			levelVar.Set(GetLevelFromFunc(lb.levelKey, getEnvLevelFunc(), lb.level))
+		}
 	}
 
 	// Create the handler

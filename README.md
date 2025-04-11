@@ -13,7 +13,7 @@ Package `slogx` is a collection of extensions to Go’s structured logging packa
 The `slogx` package provides the following features:
 * `ContextHandler` allows you to add `slog` attributes (`slog.Attr` instances) to a `context.Context`.  These attributes are added to log records when the `*Context` function variants (`InfoContext`, `ErrorContext`, etc) on the logger are used.
 * `LoggerBuilder` provides a simple way to build `slog.Logger` instances.
-* `LevelManager` provides a way to manage `slog.LevelVar` instances from environment variables.
+* `LevelManager` provides a way to manage `slog.LevelVar` instances from environment variables or provided LevelFunc (useful with config modules like koanf, viper, etc.).
 * Multiple loggers can be created with different log levels and formats. See [internal/examples](internal/examples) for more examples.
 
 ## Installation
@@ -52,7 +52,8 @@ func main() {
 ```
 .
 ### Managing log levels
-The following example demonstrates how to create a logger with a log level that can be changed at runtime.
+The following examples demonstrate how to create a logger with a log level that can be changed at runtime.
+#### Environment Variables example
 ```go
 package main
 
@@ -86,12 +87,12 @@ var (
 				Build()
 )
 
-// manageLevelFromEnv Manage the log level from an environment variable
+// manageLevelFromEnv Manage the log level from an environment variable with LevelManager.ManageLevelFromEnv.
 func manageLevelFromEnv(logLevel string, levelVar *slog.LevelVar) {
 	// Log the log level
 	slog.Default().Info("", slog.String(logLevel, os.Getenv(logLevel)))
 
-	// Set the log level
+	// Set the log level.
 	err := slogx.GetLevelManager().ManageLevelFromEnv(levelVar, logLevel)
 	if err != nil {
 		panic(err)
@@ -146,8 +147,108 @@ func main() {
 }
 
 ```
+#### LevelFunc example
+Although very similar to the above, this example demonstrates how a LevelFunc can be used to customize the source of log level values.
+```go
+package main
 
-#### Log level example
+import (
+	"github.com/Evernorth/slogx-go/slogx"
+	"github.com/knadh/koanf/v2"
+	"log/slog"
+	"os"
+) 
+
+// Property keys
+// These can be set to change the log level at runtime.
+// The log level can be set to one of the following values: DEBUG, INFO, WARN, ERROR, FATAL, PANIC
+const (
+    logger1LevelKey = "logger1.log.level"
+    logger2LevelKey = "logger2.log.level"
+)
+
+// Loggers
+// This gets us a slog.Logger with context support that logs in JSON format to stdout.
+var (
+    logger1, levelVar1 = slogx.NewLoggerBuilder().
+      WithWriter(os.Stdout).
+      WithFormat(slogx.FormatJSON).
+      WithLevel(slog.LevelInfo).
+      Build()
+  
+    logger2, levelVar2 = slogx.NewLoggerBuilder().
+      WithWriter(os.Stdout).
+      WithFormat(slogx.FormatJSON).
+      WithLevel(slog.LevelDebug).
+      Build()
+    
+    // create a new koanf instance to provide the configuration
+    k = koanf.New(".")
+)
+
+// manageLevelFromFunc Manage the log level from a function with LevelManager.ManageLevelFromFunc.
+func manageLevelFromFunc(logLevel string, levelVar *slog.LevelVar) {
+    // Log the log level
+    slog.Default().Info("", slog.String(logLevel, k.String(logLevel)))
+    
+    // Set the log level, using Koanf as the LevelFunc.
+    err := slogx.GetLevelManager().ManageLevelFromFunc(levelVar, logLevel, k.String)
+    if err != nil {
+        panic(err)
+    }
+
+}
+
+// setup Set the default level manager
+func setup() {
+
+    // Load Koanf config from the Providers of choice (environment, file, etc.).
+    loadConfig(k)
+    
+    // Enroll the level keys with the LevelManager
+    manageLevelFromFunc(logger1LevelKey, levelVar1)
+    manageLevelFromFunc(logger2LevelKey, levelVar2)
+    
+    // Tell the LevelManager to update the levels
+    slogx.GetLevelManager().UpdateLevels()
+    
+    // Log that the logger has been initialized
+    
+    slog.Info("Logger initialized", slog.String(logger1LevelKey, levelVar1.Level().String()))
+    slog.Info("Logger initialized", slog.String(logger2LevelKey, levelVar2.Level().String()))
+}
+
+// main This function demonstrates how to use the slogx package to create a logger to manage log levels.
+// It also demonstrates how to manage the log level from a configuration module (Koanf, other).
+// It also demonstrates how to use multiple loggers with log levels.
+// The logger is configured to log in JSON format to stdout with a default log level of INFO.
+func main() {
+
+    setup()
+    
+    // Log some test messages
+    
+    // This message will not be logged because the log level is INFO.
+    // This can be changed by setting the environment variable LOGGER1_LOG_LEVEL to DEBUG
+    logger1.Debug("logger1 debug message.")
+    
+    logger1.Info("logger1 info message.")
+    logger1.Warn("logger1 warn message.")
+    logger1.Error("logger1 error message.")
+    
+    // Log some test messages using the 2nd logger
+    
+    // This message will be logged because the log level is DEBUG.
+    // This can be changed by setting the environment variable LOGGER2_LOG_LEVEL to INFO
+    logger2.Debug("logger2 debug message.")
+    logger2.Info("logger2 info message.")
+    logger2.Warn("logger2 warn message.")
+    logger2.Error("logger2 error message.")
+
+}
+```
+
+#### Log example
 ```text
 2024/10/21 12:05:40 INFO Logger initialized LOGGER1_LOG_LEVEL=INFO
 2024/10/21 12:05:40 INFO Logger initialized LOGGER2_LOG_LEVEL=DEBUG
