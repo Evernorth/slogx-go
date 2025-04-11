@@ -191,7 +191,7 @@ func manageLevelFromFunc(logLevel string, levelVar *slog.LevelVar) {
     // Log the log level
     slog.Default().Info("", slog.String(logLevel, k.String(logLevel)))
     
-    // Set the log level, using Koanf as the LevelFunc.
+    // Set the log level, using Koanf as the LevelFunc for obtaining updated log levels.
     err := slogx.GetLevelManager().ManageLevelFromFunc(levelVar, logLevel, k.String)
     if err != nil {
         panic(err)
