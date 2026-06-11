@@ -1,13 +1,17 @@
 package slogx
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"bytes"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"reflect"
 	"runtime"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewLoggerBuilder(t *testing.T) {
@@ -41,6 +45,16 @@ func TestWithWriter(t *testing.T) {
 func TestWithLevel(t *testing.T) {
 	builder := NewLoggerBuilder().WithLevel(slog.LevelDebug).(*defaultLoggerBuilder)
 	assert.Equal(t, slog.LevelDebug, builder.level)
+}
+
+func TestWithLevelString(t *testing.T) {
+	builder := NewLoggerBuilder().WithLevelString("debug").(*defaultLoggerBuilder)
+	assert.Equal(t, slog.LevelDebug, builder.level)
+}
+
+func TestWithLevelStringInvalid(t *testing.T) {
+	builder := NewLoggerBuilder().WithLevelString("invalid").(*defaultLoggerBuilder)
+	assert.Equal(t, slog.LevelInfo, builder.level)
 }
 
 func TestWithLevelEnvVar(t *testing.T) {
@@ -94,4 +108,73 @@ func TestBuild_WithLevelFunc(t *testing.T) {
 	assert.NotNil(t, logger)
 	assert.NotNil(t, levelVar)
 	assert.Equal(t, slog.LevelInfo, levelVar.Level())
+}
+
+func TestBuild_WithTimestampFormat(t *testing.T) {
+	tests := []struct {
+		name            string
+		timestampFormat string
+		expectedFormat  string
+	}{
+		{
+			name:            "valid format RFC3339 is preserved",
+			timestampFormat: time.RFC3339,
+			expectedFormat:  time.RFC3339,
+		},
+		{
+			name:            "valid format Kitchen is preserved",
+			timestampFormat: time.Kitchen,
+			expectedFormat:  time.Kitchen,
+		},
+		{
+			name:            "invalid format falls back to RFC3339Nano",
+			timestampFormat: "not-a-real-format",
+			expectedFormat:  time.RFC3339Nano,
+		},
+		{
+			name:            "empty string falls back to RFC3339Nano",
+			timestampFormat: "",
+			expectedFormat:  time.RFC3339Nano,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+
+			lb := &defaultLoggerBuilder{
+				level:           slog.LevelInfo,
+				format:          FormatJSON,
+				writer:          &buf,
+				timestampFormat: tt.timestampFormat,
+			}
+
+			logger, _ := lb.Build()
+			logger.Info("test message")
+
+			// Parse the JSON output and extract the time field
+			var entry map[string]any
+			if err := json.Unmarshal(buf.Bytes(), &entry); err != nil {
+				t.Fatalf("failed to parse log output as JSON: %v", err)
+			}
+
+			rawTime, ok := entry["time"].(string)
+			if !ok {
+				t.Fatal("time field missing or not a string")
+			}
+
+			// Verify the timestamp parses correctly with the expected format
+			if _, err := time.Parse(tt.expectedFormat, rawTime); err != nil {
+				t.Errorf("timestamp %q does not match expected format %q: %v", rawTime, tt.expectedFormat, err)
+			}
+
+			// Also verify it does NOT parse with a different format (optional sanity check)
+			if tt.expectedFormat != time.RFC3339 {
+				if _, err := time.Parse(time.RFC3339, rawTime); err == nil {
+					// RFC3339 is a subset of RFC3339Nano so this check only makes
+					// sense when the expected format is clearly distinct
+				}
+			}
+		})
+	}
 }

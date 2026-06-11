@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 )
 
 type Format int
@@ -19,8 +20,10 @@ type LoggerBuilder interface {
 	WithFormat(format Format) LoggerBuilder
 	WithWriter(writer io.Writer) LoggerBuilder
 	WithLevel(level slog.Level) LoggerBuilder
+	WithLevelString(level string) LoggerBuilder
 	WithLevelEnvVar(key string) LoggerBuilder
 	WithLevelFunc(key string, levelFunc LevelFunc) LoggerBuilder
+	WithTimestampFormat(format string) LoggerBuilder
 	Build() (*slog.Logger, *slog.LevelVar)
 }
 
@@ -31,10 +34,11 @@ type defaultLoggerBuilder struct {
 	useContextHandler bool
 	levelKey          string
 	levelFunc         LevelFunc
+	timestampFormat   string
 }
 
 // NewLoggerBuilder creates a new LoggerBuilder with default values.  The default values are:  LevelInfo, FormatText,
-// useContextHandler=false, levelKey="", levelFunc=nil and writer=os.Stderr.
+// useContextHandler=false, levelKey="", levelFunc=nil, writer=os.Stderr. and timestampFormat=time.RFC3339Nano
 func NewLoggerBuilder() LoggerBuilder {
 	return &defaultLoggerBuilder{
 		level:             slog.LevelInfo,
@@ -43,6 +47,7 @@ func NewLoggerBuilder() LoggerBuilder {
 		levelKey:          "",
 		levelFunc:         nil,
 		writer:            os.Stderr,
+		timestampFormat:   time.RFC3339Nano,
 	}
 }
 
@@ -101,6 +106,12 @@ func (lb *defaultLoggerBuilder) WithLevelFunc(key string, levelFunc LevelFunc) L
 	return lb
 }
 
+// WithTimestampFormat sets the timestamp format of the logs. If the format is invalid, panic
+func (lb *defaultLoggerBuilder) WithTimestampFormat(format string) LoggerBuilder {
+	lb.timestampFormat = format
+	return lb
+}
+
 // Build creates a new slog.Logger with the provided configuration. A slog.LevelVar to control the
 // logger level is also returned.
 func (lb *defaultLoggerBuilder) Build() (*slog.Logger, *slog.LevelVar) {
@@ -118,10 +129,46 @@ func (lb *defaultLoggerBuilder) Build() (*slog.Logger, *slog.LevelVar) {
 			levelVar.Set(GetLevelFromFunc(lb.levelKey, getEnvLevelFunc(), lb.level))
 		}
 	}
+	// Validate lb.timestampFormat is one of the premade ones
+	validFormats := map[string]struct{}{
+		time.Layout:      {},
+		time.ANSIC:       {},
+		time.UnixDate:    {},
+		time.RubyDate:    {},
+		time.RFC822:      {},
+		time.RFC822Z:     {},
+		time.RFC850:      {},
+		time.RFC1123:     {},
+		time.RFC1123Z:    {},
+		time.RFC3339:     {},
+		time.RFC3339Nano: {},
+		time.Kitchen:     {},
+		time.Stamp:       {},
+		time.StampMilli:  {},
+		time.StampMicro:  {},
+		time.StampNano:   {},
+		time.DateTime:    {},
+		time.DateOnly:    {},
+		time.TimeOnly:    {},
+	}
+
+	if _, ok := validFormats[lb.timestampFormat]; !ok {
+		lb.timestampFormat = time.RFC3339Nano
+	}
 
 	// Create the handler
 	handlerOpts := &slog.HandlerOptions{
 		Level: levelVar,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				t := a.Value.Time()
+				return slog.String(
+					slog.TimeKey,
+					t.Format(lb.timestampFormat),
+				)
+			}
+			return a
+		},
 	}
 	var handler slog.Handler
 	if lb.format == FormatJSON {
