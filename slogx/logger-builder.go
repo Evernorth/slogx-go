@@ -4,6 +4,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"strings"
 )
 
 type Format int
@@ -66,6 +67,24 @@ func (lb *defaultLoggerBuilder) WithWriter(writer io.Writer) LoggerBuilder {
 // WithLevel sets the slog.Level for the logger.
 func (lb *defaultLoggerBuilder) WithLevel(level slog.Level) LoggerBuilder {
 	lb.level = level
+	return lb
+}
+
+// WithLevelString sets the slog.Level for the logger with a string. Defaults to INFO if the string is invalid
+func (lb *defaultLoggerBuilder) WithLevelString(level string) LoggerBuilder {
+	levelString := strings.ToUpper(strings.TrimSpace(level))
+	switch levelString {
+	case slog.LevelDebug.String():
+		lb.level = slog.LevelDebug
+	case slog.LevelInfo.String():
+		lb.level = slog.LevelInfo
+	case slog.LevelWarn.String():
+		lb.level = slog.LevelWarn
+	case slog.LevelError.String():
+		lb.level = slog.LevelError
+	default:
+		lb.level = slog.LevelInfo
+	}
 	return lb
 }
 
