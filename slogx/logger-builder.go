@@ -106,7 +106,7 @@ func (lb *defaultLoggerBuilder) WithLevelFunc(key string, levelFunc LevelFunc) L
 	return lb
 }
 
-// WithTimestampFormat sets the timestamp format of the logs. If the format is invalid, panic
+// WithTimestampFormat sets the timestamp format of the logs.
 func (lb *defaultLoggerBuilder) WithTimestampFormat(format string) LoggerBuilder {
 	lb.timestampFormat = format
 	return lb
@@ -129,7 +129,8 @@ func (lb *defaultLoggerBuilder) Build() (*slog.Logger, *slog.LevelVar) {
 			levelVar.Set(GetLevelFromFunc(lb.levelKey, getEnvLevelFunc(), lb.level))
 		}
 	}
-	// Validate lb.timestampFormat is one of the premade ones
+	// Validate lb.timestampFormat is one of the standard time constants
+	// https://pkg.go.dev/time#pkg-constants
 	validFormats := map[string]struct{}{
 		time.Layout:      {},
 		time.ANSIC:       {},
@@ -152,6 +153,7 @@ func (lb *defaultLoggerBuilder) Build() (*slog.Logger, *slog.LevelVar) {
 		time.TimeOnly:    {},
 	}
 
+	// If format isnt a stamdard format set to default
 	if _, ok := validFormats[lb.timestampFormat]; !ok {
 		lb.timestampFormat = time.RFC3339Nano
 	}
