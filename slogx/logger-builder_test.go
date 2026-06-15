@@ -14,6 +14,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// HELPERS
+
+func expectPanic(t *testing.T, fn func()) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic, but none occurred")
+		}
+	}()
+	fn()
+}
+
+// TESTS
+
 func TestNewLoggerBuilder(t *testing.T) {
 	builder := NewLoggerBuilder().(*defaultLoggerBuilder)
 	assert.Equal(t, slog.LevelInfo, builder.level)
@@ -53,8 +66,9 @@ func TestWithLevelString(t *testing.T) {
 }
 
 func TestWithLevelStringInvalid(t *testing.T) {
-	builder := NewLoggerBuilder().WithLevelString("invalid").(*defaultLoggerBuilder)
-	assert.Equal(t, slog.LevelInfo, builder.level)
+	expectPanic(t, func() {
+		NewLoggerBuilder().WithLevelString("invalid")
+	})
 }
 
 func TestWithLevelEnvVar(t *testing.T) {
@@ -76,6 +90,22 @@ func TestWithLevelFunc(t *testing.T) {
 	namePtrName2 := runtime.FuncForPC(nameFuncPtr).Name()
 
 	assert.Equal(t, namePtrName2, namePtrName1)
+}
+
+func TestWithTimestampFormat(t *testing.T) {
+	builder := NewLoggerBuilder().WithTimestampFormat(time.RFC1123).(*defaultLoggerBuilder)
+	assert.Equal(t, time.RFC1123, builder.timestampFormat)
+}
+
+func TestWithTimestampFormatUnset(t *testing.T) {
+	builder := NewLoggerBuilder().(*defaultLoggerBuilder)
+	assert.Equal(t, "", builder.timestampFormat)
+}
+
+func TestWithTimestampFormatInvalid(t *testing.T) {
+	expectPanic(t, func() {
+		NewLoggerBuilder().WithTimestampFormat("invalid")
+	})
 }
 
 func TestBuild_WithEnvVar(t *testing.T) {
@@ -114,27 +144,36 @@ func TestBuild_WithTimestampFormat(t *testing.T) {
 	tests := []struct {
 		name            string
 		timestampFormat string
-		expectedFormat  string
+		shouldFormat    bool // true if timestampFormat was explicitly set
+		expectedParseFn func(string) error
 	}{
 		{
 			name:            "valid format RFC3339 is preserved",
 			timestampFormat: time.RFC3339,
-			expectedFormat:  time.RFC3339,
+			shouldFormat:    true,
+			expectedParseFn: func(s string) error {
+				_, err := time.Parse(time.RFC3339, s)
+				return err
+			},
 		},
 		{
 			name:            "valid format Kitchen is preserved",
 			timestampFormat: time.Kitchen,
-			expectedFormat:  time.Kitchen,
+			shouldFormat:    true,
+			expectedParseFn: func(s string) error {
+				_, err := time.Parse(time.Kitchen, s)
+				return err
+			},
 		},
 		{
-			name:            "invalid format falls back to RFC3339Nano",
-			timestampFormat: "not-a-real-format",
-			expectedFormat:  time.RFC3339Nano,
-		},
-		{
-			name:            "empty string falls back to RFC3339Nano",
+			name:            "empty string does not touch logger options",
 			timestampFormat: "",
-			expectedFormat:  time.RFC3339Nano,
+			shouldFormat:    false,
+			expectedParseFn: func(s string) error {
+				// When not formatting, slog uses RFC3339Nano by default
+				_, err := time.Parse(time.RFC3339Nano, s)
+				return err
+			},
 		},
 	}
 
@@ -163,17 +202,9 @@ func TestBuild_WithTimestampFormat(t *testing.T) {
 				t.Fatal("time field missing or not a string")
 			}
 
-			// Verify the timestamp parses correctly with the expected format
-			if _, err := time.Parse(tt.expectedFormat, rawTime); err != nil {
-				t.Errorf("timestamp %q does not match expected format %q: %v", rawTime, tt.expectedFormat, err)
-			}
-
-			// Also verify it does NOT parse with a different format (optional sanity check)
-			if tt.expectedFormat != time.RFC3339 {
-				if _, err := time.Parse(time.RFC3339, rawTime); err == nil {
-					// RFC3339 is a subset of RFC3339Nano so this check only makes
-					// sense when the expected format is clearly distinct
-				}
+			// Verify the timestamp parses correctly
+			if err := tt.expectedParseFn(rawTime); err != nil {
+				t.Errorf("timestamp %q does not parse with expected format: %v", rawTime, err)
 			}
 		})
 	}

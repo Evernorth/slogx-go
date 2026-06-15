@@ -1,6 +1,7 @@
 package slogx
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -14,6 +15,30 @@ const (
 	FormatText Format = 0
 	FormatJSON Format = 1
 )
+
+// Validate lb.timestampFormat is one of the standard time constants
+// https://pkg.go.dev/time#pkg-constants
+var validTimestampFormats = map[string]struct{}{
+	time.Layout:      {},
+	time.ANSIC:       {},
+	time.UnixDate:    {},
+	time.RubyDate:    {},
+	time.RFC822:      {},
+	time.RFC822Z:     {},
+	time.RFC850:      {},
+	time.RFC1123:     {},
+	time.RFC1123Z:    {},
+	time.RFC3339:     {},
+	time.RFC3339Nano: {},
+	time.Kitchen:     {},
+	time.Stamp:       {},
+	time.StampMilli:  {},
+	time.StampMicro:  {},
+	time.StampNano:   {},
+	time.DateTime:    {},
+	time.DateOnly:    {},
+	time.TimeOnly:    {},
+}
 
 type LoggerBuilder interface {
 	WithContextHandler() LoggerBuilder
@@ -47,7 +72,7 @@ func NewLoggerBuilder() LoggerBuilder {
 		levelKey:          "",
 		levelFunc:         nil,
 		writer:            os.Stderr,
-		timestampFormat:   time.RFC3339Nano,
+		timestampFormat:   "",
 	}
 }
 
@@ -78,17 +103,10 @@ func (lb *defaultLoggerBuilder) WithLevel(level slog.Level) LoggerBuilder {
 // WithLevelString sets the slog.Level for the logger with a string. Defaults to INFO if the string is invalid
 func (lb *defaultLoggerBuilder) WithLevelString(level string) LoggerBuilder {
 	levelString := strings.ToUpper(strings.TrimSpace(level))
-	switch levelString {
-	case slog.LevelDebug.String():
-		lb.level = slog.LevelDebug
-	case slog.LevelInfo.String():
-		lb.level = slog.LevelInfo
-	case slog.LevelWarn.String():
-		lb.level = slog.LevelWarn
-	case slog.LevelError.String():
-		lb.level = slog.LevelError
-	default:
-		lb.level = slog.LevelInfo
+	var err error
+	lb.level, err = GetLevelByName(levelString)
+	if err != nil {
+		panic(err)
 	}
 	return lb
 }
@@ -108,6 +126,11 @@ func (lb *defaultLoggerBuilder) WithLevelFunc(key string, levelFunc LevelFunc) L
 
 // WithTimestampFormat sets the timestamp format of the logs.
 func (lb *defaultLoggerBuilder) WithTimestampFormat(format string) LoggerBuilder {
+
+	// If format isnt a standard format set to default
+	if _, ok := validTimestampFormats[format]; !ok {
+		panic(fmt.Sprintf("invalid timestamp format: %q must be a valid constant from time package", format))
+	}
 	lb.timestampFormat = format
 	return lb
 }
@@ -129,40 +152,12 @@ func (lb *defaultLoggerBuilder) Build() (*slog.Logger, *slog.LevelVar) {
 			levelVar.Set(GetLevelFromFunc(lb.levelKey, getEnvLevelFunc(), lb.level))
 		}
 	}
-	// Validate lb.timestampFormat is one of the standard time constants
-	// https://pkg.go.dev/time#pkg-constants
-	validFormats := map[string]struct{}{
-		time.Layout:      {},
-		time.ANSIC:       {},
-		time.UnixDate:    {},
-		time.RubyDate:    {},
-		time.RFC822:      {},
-		time.RFC822Z:     {},
-		time.RFC850:      {},
-		time.RFC1123:     {},
-		time.RFC1123Z:    {},
-		time.RFC3339:     {},
-		time.RFC3339Nano: {},
-		time.Kitchen:     {},
-		time.Stamp:       {},
-		time.StampMilli:  {},
-		time.StampMicro:  {},
-		time.StampNano:   {},
-		time.DateTime:    {},
-		time.DateOnly:    {},
-		time.TimeOnly:    {},
-	}
-
-	// If format isnt a stamdard format set to default
-	if _, ok := validFormats[lb.timestampFormat]; !ok {
-		lb.timestampFormat = time.RFC3339Nano
-	}
 
 	// Create the handler
 	handlerOpts := &slog.HandlerOptions{
 		Level: levelVar,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey {
+			if a.Key == slog.TimeKey && lb.timestampFormat != "" {
 				t := a.Value.Time()
 				return slog.String(
 					slog.TimeKey,
