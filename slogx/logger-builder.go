@@ -16,7 +16,7 @@ const (
 	FormatJSON Format = 1
 )
 
-// Validate lb.timestampFormat is one of the standard time constants
+// lb.timestampFormat must be one of the standard time constants
 // https://pkg.go.dev/time#pkg-constants
 var validTimestampFormats = map[string]struct{}{
 	time.Layout:      {},
@@ -63,7 +63,7 @@ type defaultLoggerBuilder struct {
 }
 
 // NewLoggerBuilder creates a new LoggerBuilder with default values.  The default values are:  LevelInfo, FormatText,
-// useContextHandler=false, levelKey="", levelFunc=nil, writer=os.Stderr. and timestampFormat=time.RFC3339Nano
+// useContextHandler=false, levelKey="", levelFunc=nil, writer=os.Stderr. and the slog default for timestamp format
 func NewLoggerBuilder() LoggerBuilder {
 	return &defaultLoggerBuilder{
 		level:             slog.LevelInfo,
@@ -106,7 +106,7 @@ func (lb *defaultLoggerBuilder) WithLevelString(level string) LoggerBuilder {
 	var err error
 	lb.level, err = GetLevelByName(levelString)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("invalid log level, %s is not a valid log level from the slog package", level))
 	}
 	return lb
 }
