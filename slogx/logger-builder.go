@@ -104,10 +104,11 @@ func (lb *defaultLoggerBuilder) WithLevel(level slog.Level) LoggerBuilder {
 func (lb *defaultLoggerBuilder) WithLevelString(level string) LoggerBuilder {
 	levelString := strings.ToUpper(strings.TrimSpace(level))
 	var err error
-	lb.level, err = GetLevelByName(levelString)
+	levelPtr, err := GetLevelByName(levelString)
 	if err != nil {
 		panic(fmt.Sprintf("invalid log level, %s is not a valid log level from the slog package", level))
 	}
+	lb.level = *levelPtr
 	return lb
 }
 

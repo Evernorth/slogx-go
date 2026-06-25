@@ -8,21 +8,21 @@ import (
 
 // GetLevelByName returns a slog.Level object for the provided level name.
 // If the level name is not valid, an error is returned
-func GetLevelByName(levelName string) (slog.Level, error) {
+func GetLevelByName(levelName string) (*slog.Level, error) {
 	if strings.EqualFold(levelName, slog.LevelDebug.String()) {
 		levelDebug := slog.LevelDebug
-		return levelDebug, nil
+		return &levelDebug, nil
 	} else if strings.EqualFold(levelName, slog.LevelInfo.String()) {
 		levelInfo := slog.LevelInfo
-		return levelInfo, nil
+		return &levelInfo, nil
 	} else if strings.EqualFold(levelName, slog.LevelWarn.String()) {
 		levelWarn := slog.LevelWarn
-		return levelWarn, nil
+		return &levelWarn, nil
 	} else if strings.EqualFold(levelName, slog.LevelError.String()) {
 		levelError := slog.LevelError
-		return levelError, nil
+		return &levelError, nil
 	} else {
-		return slog.Level(0), errors.New("invalid level name: " + levelName)
+		return nil, errors.New("invalid level name: " + levelName)
 	}
 }
 
@@ -51,5 +51,5 @@ func GetLevelFromFunc(levelKey string, levelFunc LevelFunc, defaultLevel slog.Le
 			slog.String("level", levelName))
 		return defaultLevel
 	}
-	return level
+	return *level
 }
