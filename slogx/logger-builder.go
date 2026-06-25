@@ -5,7 +5,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -102,13 +101,11 @@ func (lb *defaultLoggerBuilder) WithLevel(level slog.Level) LoggerBuilder {
 
 // WithLevelString sets the slog.Level for the logger with a string. Defaults to INFO if the string is invalid
 func (lb *defaultLoggerBuilder) WithLevelString(level string) LoggerBuilder {
-	levelString := strings.ToUpper(strings.TrimSpace(level))
 	var err error
-	levelPtr, err := GetLevelByName(levelString)
+	lb.level, err = GetLevelValueByName(level)
 	if err != nil {
 		panic(fmt.Sprintf("invalid log level, %s is not a valid log level from the slog package", level))
 	}
-	lb.level = *levelPtr
 	return lb
 }
 
