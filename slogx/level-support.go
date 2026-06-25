@@ -9,21 +9,32 @@ import (
 // GetLevelByName returns a slog.Level object for the provided level name.
 // If the level name is not valid, an error is returned
 func GetLevelByName(levelName string) (*slog.Level, error) {
-	if strings.EqualFold(levelName, slog.LevelDebug.String()) {
+	levelNameTrim := strings.TrimSpace(levelName)
+	if strings.EqualFold(levelNameTrim, slog.LevelDebug.String()) {
 		levelDebug := slog.LevelDebug
 		return &levelDebug, nil
-	} else if strings.EqualFold(levelName, slog.LevelInfo.String()) {
+	} else if strings.EqualFold(levelNameTrim, slog.LevelInfo.String()) {
 		levelInfo := slog.LevelInfo
 		return &levelInfo, nil
-	} else if strings.EqualFold(levelName, slog.LevelWarn.String()) {
+	} else if strings.EqualFold(levelNameTrim, slog.LevelWarn.String()) {
 		levelWarn := slog.LevelWarn
 		return &levelWarn, nil
-	} else if strings.EqualFold(levelName, slog.LevelError.String()) {
+	} else if strings.EqualFold(levelNameTrim, slog.LevelError.String()) {
 		levelError := slog.LevelError
 		return &levelError, nil
 	} else {
 		return nil, errors.New("invalid level name: " + levelName)
 	}
+}
+
+// GetLevelValueByName returns a slog.Level value for the provided level name.
+// If the level name is not valid, LevelInfo and an error is returned
+func GetLevelValueByName(levelName string) (slog.Level, error) {
+	levelPtr, err := GetLevelByName(levelName)
+	if levelPtr == nil {
+		return slog.LevelInfo, err
+	}
+	return *levelPtr, err
 }
 
 // GetLevelFromEnv returns a slog.Level object for the provided environment variable key.
