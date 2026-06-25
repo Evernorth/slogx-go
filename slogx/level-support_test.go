@@ -48,7 +48,7 @@ func TestGetLevelFromEnv_NoEnvVar(t *testing.T) {
 	assert.Equal(t, slog.LevelInfo, actualLevel)
 }
 
-func TestGetLevelByName_TrimsWhitespace(t *testing.T) {
+func TestGetLevelValueByName_TrimsWhitespace(t *testing.T) {
 	whitespaceLevel := "   info   "
 	actualLevel, err := GetLevelValueByName(whitespaceLevel)
 	assert.NoError(t, err)
