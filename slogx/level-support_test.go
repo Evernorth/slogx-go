@@ -50,15 +50,15 @@ func TestGetLevelFromEnv_NoEnvVar(t *testing.T) {
 
 func TestGetLevelValueByName_TrimsWhitespace(t *testing.T) {
 	whitespaceLevel := "   info   "
-	actualLevel, err := GetLevelValueByName(whitespaceLevel)
+	actualLevel, err := GetLevelByName(whitespaceLevel)
 	assert.NoError(t, err)
-	assert.Equal(t, slog.LevelInfo, actualLevel)
+	assert.Equal(t, slog.LevelInfo, *actualLevel)
 }
 
 func TestGetLevelValueByName_InvalidLevel(t *testing.T) {
 	invalidLevel := "BREAKME"
-	actualLevel, err := GetLevelValueByName(invalidLevel)
+	actualLevel, err := GetLevelByName(invalidLevel)
 
-	assert.Equal(t, slog.LevelInfo, actualLevel)
+	assert.Nil(t, actualLevel)
 	assert.Error(t, err)
 }

@@ -27,16 +27,6 @@ func GetLevelByName(levelName string) (*slog.Level, error) {
 	}
 }
 
-// GetLevelValueByName returns a slog.Level value for the provided level name.
-// If the level name is not valid, LevelInfo and an error is returned
-func GetLevelValueByName(levelName string) (slog.Level, error) {
-	levelPtr, err := GetLevelByName(levelName)
-	if levelPtr == nil {
-		return slog.LevelInfo, err
-	}
-	return *levelPtr, err
-}
-
 // GetLevelFromEnv returns a slog.Level object for the provided environment variable key.
 // If the environment variable is not set or the level name is not valid, the defaultLevel is returned.
 func GetLevelFromEnv(key string, defaultLevel slog.Level) slog.Level {
