@@ -51,7 +51,7 @@ func main() {
 ```text
 {"time":"2024-10-21T12:03:41.103566-04:00","level":"INFO","msg":"Hello, World!"}
 ```
-.
+
 
 ### Setting Log Level With String
 
@@ -78,7 +78,7 @@ var (
 func main() {
 	logger.Info("Hello, World!")
 }
-````
+```
 
 This will produce the same behavior as the above example, but provides a convenient alternative if you want to staticly set your log level from a string. If the string is not a valid `slog` log level (`debug`, `info`, `warn` or `error`, case-insensitive, it will default to `info`)
 
@@ -110,7 +110,7 @@ func main() {
 	logger.Warn("C")
 	logger.Error("D")
 }
-````
+```
 
 #### Timestamp Example Output
 
