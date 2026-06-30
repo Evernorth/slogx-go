@@ -46,11 +46,83 @@ func main() {
 	logger.Info("Hello, World!")
 }
 ```
+
 #### Simple log example
 ```text
 {"time":"2024-10-21T12:03:41.103566-04:00","level":"INFO","msg":"Hello, World!"}
 ```
-.
+
+
+### Setting Log Level With String
+
+The following example demonstrates how to create a logger using a string based log level.
+```go
+package main
+
+import (
+	"github.com/Evernorth/slogx-go/slogx"
+	"log/slog"
+	"os"
+)
+
+// This gets us a slog.Logger with context support that logs in JSON format to stdout.
+var (
+	logLevel := os.Getenv("LOG_LEVEL")
+	logger, _ = slogx.NewLoggerBuilder().
+		WithWriter(os.Stdout).
+		WithFormat(slogx.FormatJSON).
+		WithLevelString(logLevel).
+		Build()
+)
+
+func main() {
+	logger.Info("Hello, World!")
+}
+```
+
+This will produce the same behavior as the above example, but provides a convenient alternative if you want to staticly set your log level from a string. If the string is not a valid `slog` log level (`debug`, `info`, `warn` or `error`, case-insensitive, it will default to `info`)
+
+### Setting Timestamp Format
+
+The following example shows how to configure the timestamp format for your logger. You must use a valid format provided by the [`time` standard library's constants](https://pkg.go.dev/time#pkg-constants).
+
+```go
+package main
+
+import (
+	"os"
+	"time"
+
+	"github.com/Evernorth/slogx-go/slogx"
+)
+
+func main() {
+
+	logger, _ := slogx.NewLoggerBuilder().
+		WithWriter(os.Stdout).
+		WithFormat(slogx.FormatJSON).
+		WithLevelString("debug").
+		WithTimestampFormat(time.TimeOnly).
+		Build()
+
+	logger.Debug("A")
+	logger.Info("B")
+	logger.Warn("C")
+	logger.Error("D")
+}
+```
+
+#### Timestamp Example Output
+
+```text
+{"time":"00:24:48","level":"DEBUG","msg":"A"}
+{"time":"00:24:48","level":"INFO","msg":"B"}
+{"time":"00:24:48","level":"WARN","msg":"C"}
+{"time":"00:24:48","level":"ERROR","msg":"D"}
+```
+
+
+
 ### Managing log levels
 The following examples demonstrate how to create a logger with a log level that can be changed at runtime.
 #### Environment Variables example

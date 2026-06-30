@@ -1,14 +1,31 @@
 package slogx
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"bytes"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"reflect"
 	"runtime"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+// HELPERS
+
+func expectPanic(t *testing.T, fn func()) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic, but none occurred")
+		}
+	}()
+	fn()
+}
+
+// TESTS
 
 func TestNewLoggerBuilder(t *testing.T) {
 	builder := NewLoggerBuilder().(*defaultLoggerBuilder)
@@ -43,6 +60,17 @@ func TestWithLevel(t *testing.T) {
 	assert.Equal(t, slog.LevelDebug, builder.level)
 }
 
+func TestWithLevelString(t *testing.T) {
+	builder := NewLoggerBuilder().WithLevelString("debug").(*defaultLoggerBuilder)
+	assert.Equal(t, slog.LevelDebug, builder.level)
+}
+
+func TestWithLevelStringInvalid(t *testing.T) {
+	expectPanic(t, func() {
+		NewLoggerBuilder().WithLevelString("invalid")
+	})
+}
+
 func TestWithLevelEnvVar(t *testing.T) {
 	envVar := "LOG_LEVEL"
 	builder := NewLoggerBuilder().WithLevelEnvVar(envVar).(*defaultLoggerBuilder)
@@ -62,6 +90,22 @@ func TestWithLevelFunc(t *testing.T) {
 	namePtrName2 := runtime.FuncForPC(nameFuncPtr).Name()
 
 	assert.Equal(t, namePtrName2, namePtrName1)
+}
+
+func TestWithTimestampFormat(t *testing.T) {
+	builder := NewLoggerBuilder().WithTimestampFormat(time.RFC1123).(*defaultLoggerBuilder)
+	assert.Equal(t, time.RFC1123, builder.timestampFormat)
+}
+
+func TestWithTimestampFormatUnset(t *testing.T) {
+	builder := NewLoggerBuilder().(*defaultLoggerBuilder)
+	assert.Equal(t, "", builder.timestampFormat)
+}
+
+func TestWithTimestampFormatInvalid(t *testing.T) {
+	expectPanic(t, func() {
+		NewLoggerBuilder().WithTimestampFormat("invalid")
+	})
 }
 
 func TestBuild_WithEnvVar(t *testing.T) {
@@ -94,4 +138,74 @@ func TestBuild_WithLevelFunc(t *testing.T) {
 	assert.NotNil(t, logger)
 	assert.NotNil(t, levelVar)
 	assert.Equal(t, slog.LevelInfo, levelVar.Level())
+}
+
+func TestBuild_WithTimestampFormat(t *testing.T) {
+	tests := []struct {
+		name            string
+		timestampFormat string
+		shouldFormat    bool // true if timestampFormat was explicitly set
+		expectedParseFn func(string) error
+	}{
+		{
+			name:            "valid format RFC3339 is preserved",
+			timestampFormat: time.RFC3339,
+			shouldFormat:    true,
+			expectedParseFn: func(s string) error {
+				_, err := time.Parse(time.RFC3339, s)
+				return err
+			},
+		},
+		{
+			name:            "valid format Kitchen is preserved",
+			timestampFormat: time.Kitchen,
+			shouldFormat:    true,
+			expectedParseFn: func(s string) error {
+				_, err := time.Parse(time.Kitchen, s)
+				return err
+			},
+		},
+		{
+			name:            "empty string does not touch logger options",
+			timestampFormat: "",
+			shouldFormat:    false,
+			expectedParseFn: func(s string) error {
+				// When not formatting, slog uses RFC3339Nano by default
+				_, err := time.Parse(time.RFC3339Nano, s)
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+
+			lb := &defaultLoggerBuilder{
+				level:           slog.LevelInfo,
+				format:          FormatJSON,
+				writer:          &buf,
+				timestampFormat: tt.timestampFormat,
+			}
+
+			logger, _ := lb.Build()
+			logger.Info("test message")
+
+			// Parse the JSON output and extract the time field
+			var entry map[string]any
+			if err := json.Unmarshal(buf.Bytes(), &entry); err != nil {
+				t.Fatalf("failed to parse log output as JSON: %v", err)
+			}
+
+			rawTime, ok := entry["time"].(string)
+			if !ok {
+				t.Fatal("time field missing or not a string")
+			}
+
+			// Verify the timestamp parses correctly
+			if err := tt.expectedParseFn(rawTime); err != nil {
+				t.Errorf("timestamp %q does not parse with expected format: %v", rawTime, err)
+			}
+		})
+	}
 }
