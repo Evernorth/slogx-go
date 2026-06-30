@@ -5,7 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"time"
+	"strings"
 )
 
 type Format int
@@ -15,28 +15,21 @@ const (
 	FormatJSON Format = 1
 )
 
-// lb.timestampFormat must be one of the standard time constants
-// https://pkg.go.dev/time#pkg-constants
-var validTimestampFormats = map[string]struct{}{
-	time.Layout:      {},
-	time.ANSIC:       {},
-	time.UnixDate:    {},
-	time.RubyDate:    {},
-	time.RFC822:      {},
-	time.RFC822Z:     {},
-	time.RFC850:      {},
-	time.RFC1123:     {},
-	time.RFC1123Z:    {},
-	time.RFC3339:     {},
-	time.RFC3339Nano: {},
-	time.Kitchen:     {},
-	time.Stamp:       {},
-	time.StampMilli:  {},
-	time.StampMicro:  {},
-	time.StampNano:   {},
-	time.DateTime:    {},
-	time.DateOnly:    {},
-	time.TimeOnly:    {},
+// timeLayoutTokens are the reference substrings that Go's time package recognises as format
+// tokens. A layout must contain at least one to produce meaningful timestamp output.
+// See https://pkg.go.dev/time#Layout for the full reference time.
+var timeLayoutTokens = []string{
+	"2006", "06", // year
+	"January", "Jan", "01", // month
+	"Monday", "Mon", "_2", "02", // day
+	"15", "03", // hour (24h / 12h zero-padded)
+	"04",                            // minute (zero-padded)
+	"05",                            // second (zero-padded)
+	".000000000", ".000000", ".000", // sub-second (fixed width)
+	".999999999", ".999999", ".999", // sub-second (trailing zeros trimmed)
+	"PM", "pm", // AM/PM marker
+	"MST", "-0700", "-07:00", "-07", // timezone name / numeric offset
+	"Z0700", "Z07:00", // UTC indicator + offset
 }
 
 type LoggerBuilder interface {
@@ -122,15 +115,17 @@ func (lb *defaultLoggerBuilder) WithLevelFunc(key string, levelFunc LevelFunc) L
 	return lb
 }
 
-// WithTimestampFormat sets the timestamp format of the logs.
+// WithTimestampFormat sets the timestamp format of the logs. The format must contain at least
+// one recognised Go time layout token (e.g. "2006", "Jan", "15") so that it produces a
+// meaningful timestamp. See https://pkg.go.dev/time#Layout for the reference time.
 func (lb *defaultLoggerBuilder) WithTimestampFormat(format string) LoggerBuilder {
-
-	// If format isnt a standard format set to default
-	if _, ok := validTimestampFormats[format]; !ok {
-		panic(fmt.Sprintf("invalid timestamp format: %q must be a valid constant from time package", format))
+	for _, token := range timeLayoutTokens {
+		if strings.Contains(format, token) {
+			lb.timestampFormat = format
+			return lb
+		}
 	}
-	lb.timestampFormat = format
-	return lb
+	panic(fmt.Sprintf("invalid timestamp format: %q contains no recognised Go time layout tokens", format))
 }
 
 // Build creates a new slog.Logger with the provided configuration. A slog.LevelVar to control the
@@ -154,17 +149,20 @@ func (lb *defaultLoggerBuilder) Build() (*slog.Logger, *slog.LevelVar) {
 	// Create the handler
 	handlerOpts := &slog.HandlerOptions{
 		Level: levelVar,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey && lb.timestampFormat != "" {
-				t := a.Value.Time()
-				return slog.String(
-					slog.TimeKey,
-					t.Format(lb.timestampFormat),
-				)
+	}
+
+	// Only install ReplaceAttr when a custom timestamp format is configured. This keeps
+	// the per-attribute callback off the hot path entirely for the default format.
+	if lb.timestampFormat != "" {
+		format := lb.timestampFormat
+		handlerOpts.ReplaceAttr = func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey && len(groups) == 0 {
+				return slog.String(slog.TimeKey, a.Value.Time().Format(format))
 			}
 			return a
-		},
+		}
 	}
+
 	var handler slog.Handler
 	if lb.format == FormatJSON {
 		handler = slog.NewJSONHandler(lb.writer, handlerOpts)
