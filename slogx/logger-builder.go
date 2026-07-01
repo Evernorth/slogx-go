@@ -92,7 +92,7 @@ func (lb *defaultLoggerBuilder) WithLevel(level slog.Level) LoggerBuilder {
 	return lb
 }
 
-// WithLevelString sets the slog.Level for the logger with a string. Defaults to INFO if the string is invalid
+// WithLevelString sets the slog.Level for the logger with a string.
 func (lb *defaultLoggerBuilder) WithLevelString(level string) LoggerBuilder {
 	lvlPtr, err := GetLevelByName(level)
 	if err != nil {
